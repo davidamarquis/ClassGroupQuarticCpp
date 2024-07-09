@@ -1,0 +1,48 @@
+image: fedora:34
+
+build:
+  tags: 
+    - build
+  stage: build
+  before_script:
+      # step 1: install external utilities, libraries that are required by the dependencies, and dynamically linked dependencies
+      - dnf -y install glibc-devel gcc-c++ gmp-devel automake autoconf autoconf-archive pari-gp boost-devel flint-devel antic-devel
+      # step 2: install statically linked libraries
+      - dnf -y install boost-static mpfi-static
+      # step 3: install static dependencies that don't have a DNF package
+      - curl https://libntl.org/ntl-11.5.1.tar.gz --output ntl.tar.gz
+      - gunzip ntl.tar.gz
+      - tar xf ntl.tar
+      - cd ntl-11.5.1/src
+      - ./configure
+      - make
+      - make install
+      - cd ../..
+      - source ci_before_build.sh
+      - echo $LD_LIBRARY_PATH
+  script:
+    - autoreconf -vi
+    - cd build
+    - sh ../configure "CXXFLAGS=$CXXFLAGS -fdiagnostics-color" --without-mpfr 
+    - make
+  artifacts:
+    paths:
+      - build/test
+      - build/main
+    expire_in: 1 day
+
+# run tests using the binary built before
+test:
+  tags: 
+    - test
+  stage: test 
+  script:
+    - ./build/test -r junit -o build/report.xml
+  artifacts:
+    paths:
+      - build/report.xml
+    when: always
+    reports:
+      junit: build/report.xml
+    expire_in: 1 month
+

@@ -1,0 +1,10 @@
+*.idea
+*.deps
+cmake-build-*
+*CMakeLists.txt
+
+# for macs
+.DS_Store
+
+# main.cpp used for quick tests
+src/IndexCalculus/Quartic/main.cpp
